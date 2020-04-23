@@ -7,6 +7,7 @@ Requirements
 ------------
 
 Ubuntu, CentOS7
+keepalived and haproxy in progress for ubuntu
 
 Role Variables
 --------------
