@@ -6,8 +6,8 @@ Install and configure patroni-cluster.
 Requirements
 ------------
 
-Ubuntu, CentOS7
-keepalived and haproxy in progress for ubuntu
+CentOS7
+
 
 Role Variables
 --------------
