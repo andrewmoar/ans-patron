@@ -218,7 +218,6 @@ Example Playbook
         - 100%
 
     roles:
-        - { role: consul_server, when: "inventory_hostname in groups ['consul_server']|default([])", tags: ['consul_server'] }
         - { role: patroni_consul, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['patroni_consul'] }
         - { role: consul_exporter, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['consul_exporter'] }
         - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
