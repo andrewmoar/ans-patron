@@ -1,0 +1,23 @@
+---
+
+- name: Add patroni group
+  group:
+    name: "{{ patroni_system_group }}"
+    state: present
+
+- name: Add patroni user
+  user:
+    name: "{{ patroni_system_user }}"
+    group: "{{ patroni_system_group }}"
+    system: yes
+
+- name: Add consul group
+  group:
+    name: "{{ consul_system_group }}"
+    state: present
+
+- name: Add consul user
+  user:
+    name: "{{ consul_system_user }}"
+    group: "{{ consul_system_group }}"
+    system: yes

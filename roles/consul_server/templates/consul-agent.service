@@ -1,0 +1,8 @@
+[Unit]
+Description=Consul Agent
+[Service]
+ExecStart=/usr/local/bin/consul agent  -data-dir=/var/lib/consul -join={{consul1}} -join={{consul2}} -join={{consul3}} -config-dir=/etc/consul.d
+User=consul
+[Install]
+WantedBy=multi-user.target
+

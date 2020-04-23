@@ -1,0 +1,78 @@
+---
+
+- include: install_apt.yml
+  static: no
+  when: ansible_distribution == 'Ubuntu'
+
+- name: create data dir
+  file: 
+    dest: /data 
+    state: directory 
+    mode: 0770
+    owner: '{{postgres_user}}'
+    group: '{{postgres_user}}'
+
+- name: 'download and init remote basebackup'
+  shell: >
+    AWS_REGION={{AWS_REGION}}
+    WALE_S3_PREFIX=s3://{{WALE_S3_PREFIX}} 
+    AWS_ACCESS_KEY_ID={{AWS_ACCESS_KEY_ID}} 
+    AWS_SECRET_ACCESS_KEY={{AWS_SECRET_ACCESS_KEY}} 
+    wal-e backup-fetch /data/{{service_name}} LATEST
+  args:
+    creates: '/data/{{service_name}}'
+    executable: /bin/bash  
+  become: true
+  become_user: '{{postgres_user}}'
+  register: init_basebackup
+
+- debug:
+    var: init_basebackup.stdout_lines
+
+- name: copy pg_hba.conf
+  template: 
+    src: pg_hba.conf 
+    dest: /data/{{service_name}}/pg_hba.conf
+    owner: '{{postgres_user}}'
+    group: '{{postgres_user}}'
+
+- name: copy postgresql.conf
+  template: 
+    src: postgresql.conf 
+    dest: /data/{{service_name}}/postgresql.conf
+    owner: '{{postgres_user}}'
+    group: '{{postgres_user}}'
+
+- name: copy recovery.conf
+  template: 
+    src: recovery.conf 
+    dest: /data/{{service_name}}/recovery.conf
+    owner: '{{postgres_user}}'
+    group: '{{postgres_user}}'
+
+- name: Copy postgres-db-service
+  template: 
+    src: postgres-db.service 
+    dest: /etc/systemd/system/{{service_name}}_postgres_replica.service
+  register: db_unit
+
+- name: '{{service_name}}_postgres_replica | enable service'
+  systemd: 
+    name: '{{service_name}}_postgres_replica'
+    daemon_reload: yes 
+    enabled: yes
+  when: db_unit.changed
+
+- name: '{{service_name}}_postgres_replica | start service'
+  systemd: 
+    name: '{{service_name}}_postgres_replica' 
+    state: started 
+    enabled: yes
+  register: db_unit_started
+
+- name: '{{service_name}}_postgres_replica | restart service'
+  systemd: 
+    name: '{{service_name}}_postgres_replica' 
+    state: restarted
+  when: not db_unit_started.changed
+

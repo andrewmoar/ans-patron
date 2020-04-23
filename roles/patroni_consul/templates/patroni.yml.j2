@@ -1,0 +1,161 @@
+#jinja2: lstrip_blocks: True
+scope: {{ patroni_scope }}
+namespace: {{ patroni_namespace }}
+name: {{ patroni_name | default(inventory_hostname, true) }}
+restapi:
+  listen: {{ patroni_restapi_listen | default('0.0.0.0:8008', true) }}
+  connect_address: {{ patroni_restapi_connect_address |default(ansible_host + ':8008', true) }}
+consul:
+  checks: 
+bootstrap:
+  dcs:
+    ttl: {{ patroni_bootstrap_dcs_ttl }}
+    loop_wait: {{ patroni_bootstrap_dcs_loop_wait }}
+    retry_timeout: {{ patroni_bootstrap_dcs_retry_timeout }}
+    maximum_lag_on_failover: {{ patroni_bootstrap_dcs_maximum_lag_on_failover }}
+    master_start_timeout: {{ patroni_bootstrap_dcs_master_start_timeout }}
+    synchronous_mode: {{ patroni_bootstrap_dcs_synchronous_mode }}
+    postgresql:
+      use_pg_rewind: {{ patroni_bootstrap_dcs_postgresql_use_pg_rewind |lower }}
+      use_slots: {{ patroni_bootstrap_dcs_postgresql_use_slots |string |lower }}
+    {% if patroni_bootstrap_dcs_postgresql_parameters |length > 0 %}
+      parameters:
+      {% for guc in patroni_bootstrap_dcs_postgresql_parameters %}
+        {{ guc.option }}: {{ guc.value }}
+      {% endfor %}
+    {% endif %}
+    {% if patroni_bootstrap_dcs_postgresql_recovery_conf | default([], true) |length > 0 %}
+      recovery_conf:
+      {% for item in patroni_bootstrap_dcs_postgresql_recovery_conf %}
+        {{ item.option }}: {{ item.value }}
+      {% endfor %}
+    {% endif %}
+{% if patroni_bootstrap_method_name | default(None, true) and patroni_bootstrap_method_command | default(None, true) %}
+  method: {{ patroni_bootstrap_method_name }}
+  {{ patroni_bootstrap_method_name }}:
+    command: {{ patroni_bootstrap_method_command }}
+    keep_existing_recovery_conf: {{ patroni_bootstrap_method_keep_existing_recovery_conf |d(false, true) |lower }}
+  {% if patroni_bootstrap_method_recovery_conf | default([], true) |length > 0 %}
+    recovery_conf:
+    {% for item in patroni_bootstrap_method_recovery_conf %}
+      {{ item.option }}: {{ item.value }}
+    {% endfor %}
+  {% endif %}
+{% endif %}
+{% if patroni_bootstrap_initdb | default([], true) |length > 0 %}
+  initdb:
+  {% for item in patroni_bootstrap_initdb %}
+    {% if item.value is undefined %}
+    - {{ item.option }}
+    {% else %}
+    - {{ item.option }}: {{ item.value }}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if patroni_bootstrap_pg_hba | default([], true) |length > 0 %}
+  pg_hba:
+  {% for client in patroni_bootstrap_pg_hba %}
+    - {{ client.type }} {{ client.database }} {{ client.user }} {{ client.address| default(None) }} {{ client.method }}
+  {% endfor %}
+{% endif %}
+{% if patroni_bootstrap_post_bootstrap | default(None, true) %}
+  post_bootstrap: {{ patroni_bootstrap_post_bootstrap }}
+{% endif %}
+{% if patroni_bootstrap_post_init |default(None, true) %}
+  post_init: {{ patroni_bootstrap_post_init }}
+{% endif %}
+{% if patroni_bootstrap_users | default([], true) |length > 0 %}
+  users:
+  {% for user in patroni_bootstrap_users %}
+    {{ user.name }}:
+      password: {{ user.password }}
+    {% if user.options | default([], true) |length > 0 %}
+      options:
+      {% for option in user.options %}
+        - {{ option }}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+postgresql:
+  use_unix_socket: {{ patroni_postgresql_use_unix_socket |string | default(true, true) |replace(None, true) |lower }}
+  listen: {{ patroni_postgresql_listen |d('0.0.0.0:5432', true) }}
+  connect_address: {{ patroni_postgresql_connect_address | default(ansible_host + ':5432', true) }}
+{% if patroni_postgresql_data_dir |d(None, true) %}
+  data_dir: {{ patroni_postgresql_data_dir }}
+{% endif %}
+{% if patroni_postgresql_bin_dir | default(None, true) %}
+  bin_dir: {{ patroni_postgresql_bin_dir }}
+{% endif %}
+{% if patroni_postgresql_config_dir | default(None, true) %}
+  config_dir: {{ patroni_postgresql_config_dir }}
+{% endif %}
+{% if patroni_postgresql_pgpass | default(None, true) %}
+  pgpass: {{ patroni_postgresql_pgpass }}
+{% endif %}
+{% if patroni_postgresql_authentication | default([], true) |length > 0 %}
+  authentication:
+  {% for role in patroni_postgresql_authentication %}
+    {{ role.type }}:
+      username: {{ role.username }}
+      password: {{ role.password }}
+  {% endfor %}
+{% endif %}
+  create_replica_method:
+    - {{ patroni_postgresql_create_replica_method | default('basebackup', true) }}
+{% if patroni_postgresql_basebackup | default([], true) |length > 0 %}
+  basebackup:
+  {% for item in patroni_postgresql_basebackup %}
+    {% if item.value is undefined %}
+    - {{ item.option }}
+    {% else %}
+    - {{ item.option }}: {{ item.value }}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if patroni_postgresql_recovery_conf | default([], true) |length > 0 %}
+  recovery_conf:
+  {% for item in patroni_postgresql_recovery_conf %}
+    {{ item.option }}: {{ item.value }}
+  {% endfor %}
+{% endif %}
+{% if patroni_postgresql_custom_conf |default(None, true) %}
+  custom_conf: {{ patroni_postgresql_custom_conf }}
+{% endif %}
+{% if patroni_postgresql_parameters |default([], true) |length > 0 %}
+  parameters:
+  {% for guc in patroni_postgresql_parameters %}
+    {{ guc.option }}: {{ guc.value }}
+  {% endfor %}
+{% endif %}
+{% if patroni_postgresql_pg_hba | default([], true) |length > 0 %}
+  pg_hba:
+  {% for client in patroni_postgresql_pg_hba %}
+    - {{ client.type }} {{ client.database }} {{ client.user }} {{ client.address|d(None) }} {{ client.method }}
+  {% endfor %}
+{% endif %}
+  pg_ctl_timeout: {{ patroni_postgresql_pg_ctl_timeout | default(60, true) |int }}
+{% if patroni_postgresql_use_pg_rewind |bool %}
+  use_pg_rewind: true
+  {% if patroni_superuser_username |d(None, true) and patroni_superuser_password |default(None, true) %}
+  pg_rewind:
+    username: {{ patroni_superuser_username }}
+    password: {{ patroni_superuser_password }}
+  {% endif %}
+  remove_data_directory_on_rewind_failure: {{ patroni_postgresql_remove_data_directory_on_rewind_failure | default(false, true) |lower }}
+{% endif %}
+
+watchdog:
+  mode: {{ patroni_watchdog_mode |default('automatic', true) |lower }}
+{% if patroni_watchdog_mode | default('automatic', true) |lower in ('automatic', 'required') %}
+  device: {{ patroni_watchdog_device | default('/dev/watchdog', true) }}
+  safety_margin: {{ patroni_watchdog_safety_margin | default(5, true) |int }}
+{% endif %}
+
+{% if patroni_tags | default([], true) |length > 0 %}
+tags:
+  {% for tag in patroni_tags %}
+    {{ tag.name }}: {{ tag.value }}
+  {% endfor %}
+{% endif %}

@@ -1,0 +1,73 @@
+---
+
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+
+- name: install unzip
+  package:
+    name: unzip
+    state: present
+
+- name: Install system packages for patroni
+  package:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    update_cache: yes
+  with_items:
+    - "{{ patroni_system_packages }}"
+    
+- name: create dir
+  file:
+    path: "{{ patroni_env_dir }}"
+    state: directory
+    mode: 0750
+
+
+- name: install virtual-env for debian
+  pip: 
+    name: virtualenv
+    state: present
+    executable: pip3
+  when: ansible_distribution == 'Debian'
+
+- name: Install pip packages for patroni
+  pip:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    umask: "{{ item.umask }}"
+    #executable: "{{ item.executable }}"
+    virtualenv_site_packages: yes
+    virtualenv: "{{ patroni_env_dir }}"
+    virtualenv_python: "{{ python_version }}"
+    virtualenv_command: "{{ virtualenv_version }}"
+  with_items:
+    - "{{ patroni_pip_packages }}"
+
+- include_tasks: consul_agent.yml
+  tags: consul_agent
+
+- import_tasks: postgresql.yml
+  when: not patroni_postgresql_exists
+
+- include_tasks: configure.yml
+  tags: configure
+
+- name: change permissions on venv patroni
+  file: 
+    dest: "{{ patroni_env_dir }}" 
+    owner: "{{ patroni_system_user }}" 
+    group: "{{ patroni_system_group }}"
+    mode: 0750 
+    recurse: yes
+
+
+- meta: flush_handlers
+
+- name: Ensure patroni is running
+  systemd:
+    name: patroni.service
+    state: started
+    daemon_reload: yes
+    enabled: yes
+  tags: patroni start

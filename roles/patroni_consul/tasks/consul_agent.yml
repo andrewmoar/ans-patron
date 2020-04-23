@@ -1,0 +1,67 @@
+---
+#- stat: 
+#    path: /usr/local/bin/consul
+#  register: consul
+  
+- name:  download consul agent &&  Unarchive consul_{{CONSUL_VERSION}}_linux_amd64.zip 
+  unarchive:
+    src: "https://releases.hashicorp.com/consul/{{CONSUL_VERSION}}/consul_{{CONSUL_VERSION}}_linux_amd64.zip"
+    owner: "{{ consul_system_user }}"
+    group: "{{ consul_system_group }}"
+    dest: /usr/local/bin
+    remote_src: yes
+    #  when: consul.stat.exists == False
+
+- name: Changing perm adding "+x"
+  file: 
+    dest: "/usr/local/bin/consul"
+    owner: "{{ consul_system_user }}"
+    group: "{{ consul_system_group }}"
+    mode: a+x
+  become: yes
+
+- name: create dir consul
+  file:
+    path: "{{item}}"
+    owner: "{{ consul_system_user }}"
+    group: "{{ consul_system_group }}"
+    state: directory
+    mode: 0755
+  with_items:
+     - "{{consul_dir}}"
+
+
+- name: 'Copy consul init json '
+  template:
+     src: reg.json
+     dest: /etc/consul.d/
+  register: consul_unit
+  tags: consul
+
+- name: 'Copy consul-agent.service'
+  template: 
+     src: consul-agent.service 
+     dest: /etc/systemd/system/consul.service
+  register: consul_unit
+  tags: consul
+
+- name: 'consul-agent | start service'
+  systemd: 
+     name: consul
+     daemon_reload: yes
+     state: restarted 
+     enabled: yes
+
+- name: 'Copy resolved.conf'
+  template:
+     src: resolved.conf
+     dest: /etc/systemd/resolved.conf
+  tags: consul
+
+- name: 'systemd-resolved restart'
+  systemd:
+     name: systemd-resolved
+     daemon_reload: yes
+     state: restarted
+     enabled: yes
+

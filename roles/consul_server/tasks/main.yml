@@ -1,0 +1,17 @@
+---
+- name: install soft
+  package:
+    name: '{{item}}'
+    state: present
+    update_cache: yes
+  with_items:
+    - unzip 
+    - dnsmasq
+
+- include_tasks: user.yml
+  tags: consul_agent
+
+- include_tasks: consul_agent.yml
+  tags: consul_agent
+
+

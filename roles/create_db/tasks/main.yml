@@ -1,0 +1,38 @@
+---
+- name: 'Проверяем - какой из постгресов в класете в данный момент является мастером'
+  uri:
+    url: http://{{ansible_default_ipv4.address}}:8008
+    status_code: 200, 503
+  tags: pg_check_master
+  register: patroni_answer
+
+- name: debug
+  debug:
+    msg: 'Patroni answer: {{patroni_answer.status}}'
+  tags: pg_check_master
+
+- name: create db user
+  postgresql_user:
+    name: '{{ item.value.user }}'
+    password: '{{ item.value.password }}'
+    state: '{{ item.value.state }}'
+  become: yes
+  become_user: postgres
+  with_dict: "{{ databases }}"
+  when: patroni_answer.status == 200
+  ignore_errors: True
+  
+- name: create db
+  postgresql_db:
+    name: '{{ item.value.name }}'
+    owner: '{{ item.value.owner }}'
+    state: '{{ item.value.state }}'  
+  become: yes
+  become_user: postgres
+  with_dict: "{{ databases }}"
+  when: patroni_answer.status == 200
+  ignore_errors: True
+
+
+
+

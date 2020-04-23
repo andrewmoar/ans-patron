@@ -1,0 +1,50 @@
+---
+
+- name: add postgresql 9.6 repository
+  apt_repository:
+    repo: deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main
+  register: repo
+
+- name: add postgresql 9.6 repo key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+  register: repo_key
+
+- name: apt update
+  apt: update_cache=yes
+  when: repo.changed or repo_key.changed
+
+- name: install postgres
+  apt: name={{item}} state=present
+  with_items:
+    - postgresql-9.6
+    - postgresql-plpython3-9.6
+    - python3-psycopg2
+  register: postgres_install
+
+- lineinfile:
+    path: /home/ubuntu/.bashrc
+    line: 'export PATH="/usr/lib/postgresql/9.6/bin:$PATH"'
+    regexp: postgresql/9.6
+
+#- lineinfile:
+#    path: /var/lib/postgresql/.bashrc
+#    line: 'export PATH="/usr/lib/postgresql/9.6/bin:$PATH"'
+#    regexp: postgresql/9.6
+#
+- lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ansible_hostname}}"
+    regexp: "{{ansible_hostname}}"
+
+- name: Add ubuntu to group postgres
+  user:
+    name: ubuntu
+    groups: postgres
+    append: yes
+
+- name: 'Останавливаем postgres при первой инсталяции - в дальнейшем запускаем через patroni'
+  systemd: 
+    name: 'postgresql' 
+    state: stopped
+  when: postgres_install.changed

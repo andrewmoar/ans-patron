@@ -1,0 +1,14 @@
+[Unit]
+Description=postgres {{service_name}} db replica service
+After=network.target
+
+[Service]
+Type=simple
+User={{postgres_user}}
+WorkingDirectory=/data/{{service_name}}
+ExecStart=/usr/lib/postgresql/9.6/bin/postgres -D /data/{{service_name}}
+ExecReload=/bin/kill -SIGUSR1 $MAINPID
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

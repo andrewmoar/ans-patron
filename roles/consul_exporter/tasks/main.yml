@@ -1,0 +1,36 @@
+- stat: 
+    path: /opt/consul_exporter-0.4.0.linux-amd64/consul_exporter
+  register: exporter
+
+- name: download consul-exporter
+  become: yes
+  unarchive:
+    src: "https://github.com/prometheus/consul_exporter/releases/download/v0.4.0/consul_exporter-0.4.0.linux-amd64.tar.gz"
+    dest: "/opt"
+    remote_src: yes
+  when: exporter.stat.exists == False
+
+- name: create systemd service unit
+  template:
+    src: consul-exporter.service.j2
+    dest: /etc/systemd/system/consul-exporter.service
+    owner: root
+    group: root
+    mode: 0644
+  register: consul_exporter_systemd_unit
+
+- name: start service
+  systemd:
+    name: consul-exporter
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: reload systemd configuration
+  systemd:
+    name: consul-exporter
+    state: restarted
+    daemon-reload: yes
+  when: consul_exporter_systemd_unit.changed
+
+

@@ -1,0 +1,13 @@
+{
+  "services": [
+        {
+    "name": "{{patroni_db_cluster}}",
+    "checks": [
+{
+      "id": "api",
+      "http": "http://127.0.0.1:8008",
+      "interval": "3s"
+    }
+]
+  }]
+}

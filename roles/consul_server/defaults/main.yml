@@ -1,0 +1,13 @@
+---
+consul1: 10.112.2.4
+consul2: 10.112.2.8
+consul3: 10.112.2.10
+
+CONSUL_VERSION: 1.2.3
+consul_dir:
+  - /etc/consul.d/
+  - /var/lib/consul/
+
+consul_system_user: consul
+consul_system_group: consul
+

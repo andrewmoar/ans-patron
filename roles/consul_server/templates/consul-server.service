@@ -1,0 +1,8 @@
+[Unit]
+Description=Consul Server 
+[Service]
+ExecStart=/usr/local/bin/consul agent -server -data-dir=/var/lib/consul -config-dir=/etc/consul.d -ui -bootstrap-expect=3
+User=consul
+[Install]
+WantedBy=multi-user.target
+
