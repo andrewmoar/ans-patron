@@ -1,0 +1,40 @@
+# Managed by Ansible
+vrrp_script check_haproxy {
+  script    "/usr/bin/killall -0 haproxy"
+  interval  2
+  weight    10
+}
+
+vrrp_instance patroni_lb {
+  interface                 {{ keepalived_interface }}
+  state                     {{ keepalived_role }}
+  virtual_router_id         {{ keepalived_router_id }}
+  priority                  {{ keepalived_priority }}
+  advert_int                1
+  garp_master_delay         5
+
+
+
+  
+  authentication {
+            auth_type PASS
+            auth_pass {{ keepalived_password }}
+  }
+
+
+
+  track_script {
+    check_haproxy
+  }
+
+
+  virtual_ipaddress {
+    {{ keepalived_virtual_address }} dev {{ keepalived_interface }}
+
+  }
+
+
+
+
+
+}

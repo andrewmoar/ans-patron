@@ -1,0 +1,6 @@
+---
+repo_list:
+  - "https://repo.ius.io/ius-release-el7.rpm"
+  - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+haproxy_pkg: "haproxy18u-1.8.23-1.el7.ius"
+
