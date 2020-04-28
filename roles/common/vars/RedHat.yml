@@ -1,0 +1,12 @@
+---
+patroni_system_packages:
+  - { name: "epel-release",        state: "present" }
+  - { name: "libselinux-python",   state: "present" }
+  - { name: "gcc",                 state: "present" }
+  - { name: "systemd-resolved",    state: "present" }
+  - { name: "python36-devel",      state: "present" }
+  - { name: "python36-psycopg2",   state: "present" }
+  - { name: "python36-virtualenv", state: "present" }
+  - { name: "python36-pip",        state: "present" }
+  - { name: "jq",                  state: "present" }
+

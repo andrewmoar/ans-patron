@@ -1,0 +1,6 @@
+---
+patroni_system_packages:
+  - { name: "python3-psycopg2", state: "present" }
+  - { name: "python3-pip",      state: "present" }
+  - { name: "jq",              state: "present" }
+

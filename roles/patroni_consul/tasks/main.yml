@@ -3,20 +3,6 @@
 - name: Include OS-specific variables
   include_vars: "{{ ansible_os_family }}.yml"
 
-
-- name: install unzip
-  package:
-    name: unzip
-    state: present
-
-- name: Install system packages for patroni
-  package:
-    name: "{{ item.name }}"
-    state: "{{ item.state }}"
-    update_cache: yes
-  with_items:
-    - "{{ patroni_system_packages }}"
-    
 - name: create dir
   file:
     path: "{{ patroni_env_dir }}"
@@ -37,6 +23,7 @@
     state: "{{ item.state }}"
     umask: "{{ item.umask }}"
     #executable: "{{ item.executable }}"
+    #venv off
     virtualenv_site_packages: yes
     virtualenv: "{{ patroni_env_dir }}"
     virtualenv_python: "{{ python_version }}"

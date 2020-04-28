@@ -14,24 +14,24 @@ Role Variables
     consul2: "{{hostvars[groups['consul_server'][1]]['ansible_default_ipv4']['address']}}"
     consul3: "{{hostvars[groups['consul_server'][2]]['ansible_default_ipv4']['address']}}"
     CONSUL_VERSION: 1.7.2
-    haproxy_pg_nodes:
-      - { host:  "{{hostvars[groups['consul_patroni'][0]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][0]]['ansible_default_ipv4']['address']}}" }
-      - { host:  "{{hostvars[groups['consul_patroni'][1]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][1]]['ansible_default_ipv4']['address']}}" }
-      - { host:  "{{hostvars[groups['consul_patroni'][2]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][2]]['ansible_default_ipv4']['address']}}" }
-    
-    keepalived_interface: ens192
-    keepalived_virtual_address: 10.0.0.5/32
-    keepalived_router_id: 130
-    keepalived_priority: 100
-    keepalived_role: MASTER
-    keepalived_password: keepaliverpassword
-
     consul_dir:
       - /etc/consul.d/
       - /var/lib/consul/
     
     consul_system_user: consul
     consul_system_group: consul
+
+    haproxy_pg_nodes:
+  - { host:  "{{hostvars[groups['consul_patroni'][0]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][0]]['ansible_default_ipv4']['address']}}" }
+  - { host:  "{{hostvars[groups['consul_patroni'][1]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][1]]['ansible_default_ipv4']['address']}}" }
+  - { host:  "{{hostvars[groups['consul_patroni'][2]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][2]]['ansible_default_ipv4']['address']}}" }
+
+    keepalived_interface: ens192
+    keepalived_virtual_address: 10.1.216.234/32
+    keepalived_router_id: 130
+    keepalived_priority: 100 
+    keepalived_role: MASTER
+    keepalived_password: password123
     
     patroni_db_cluster: cluster-db
     
@@ -141,12 +141,14 @@ Role Variables
     
     patroni_postgresql_basebackup: []
     #  - { option: "checkpoint", value: "fast" }
+    #  - { option: "max-rate",   value: "100M" }
+    #  - { option: "verbose" }
     
     patroni_postgresql_recovery_conf: []
     
     
     patroni_postgresql_custom_conf: "" #TODO
-    #postgresql parameters
+    #postgresql parameters, can change threw reload or restart
     patroni_postgresql_parameters:
       - { option: "unix_socket_directories",   value: "/var/run/postgresql" }
       - { option: "shared_buffers",            value: "2048" }
@@ -169,6 +171,13 @@ Role Variables
     
         #change pg_hba.conf
     patroni_postgresql_pg_hba:
+     - { type: "local", database: "all",          user: "all",                                address: ,                   method: "trust" }
+     - { type: "host",  database: "all",          user: "all",                                address: "127.0.0.1/32",     method: "trust" }
+     - { type: "host",  database: "all",          user: "all",                                address: "::1/128",          method: "trust" }
+     - { type: "local", database: "replication",  user: "all",                                address: ,                   method: "trust" }
+     - { type: "host",  database: "replication",  user: "all",                                address: "127.0.0.1/32" ,    method: "trust" }
+     - { type: "host",  database: "replication",  user: "all",                                address: "::1/128" ,         method: "trust" }
+     - { type: "host",  database: "all",          user: "all",                                address: "0.0.0.0/0" ,       method: "md5" }
      - { type: "host",  database: "replication",  user: "{{ patroni_replication_username }}", address: "0.0.0.0/0",        method: "md5" }
      - { type: "host",  database: "app_db",      user: "app_user",                           address: "10.0.0.0/8",        method: "md5" }
     
@@ -207,40 +216,38 @@ Example Playbook
 - `main.yml` to assign roles to your nodes, e.g.:
 ```Yaml
 
-- hosts: consul
-  become: yes
-  vars_files:
-    - vars/default.yml
-    - vars/{{env}}.yml
-  serial:
-    - 3
-    - 100%
+  - hosts: consul
+    become: yes
+    vars_files:
+      - vars/default.yml
+      - vars/{{env}}.yml
+    serial:
+      - 3
+      - 100%
+  
+    roles:
+      - { role: consul_server, when: "inventory_hostname in groups ['consul_server']", tags: ['consul_server'] }
+  
+  - hosts: consul
+    become: yes
+    vars_files:
+        - vars/default.yml
+        - vars/{{env}}.yml
+      serial:
+        - 3
+        - 100%
 
-  roles:
-    - { role: consul_server, when: "inventory_hostname in groups ['consul_server']", tags: ['consul_server'] }
-
-- hosts: consul
-  become: yes
-
-  vars_files:
-    - vars/default.yml
-    - vars/{{env}}.yml
-  serial:
-    - 3
-    - 100%
-
-  roles:
-    - { role: patroni_consul, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['patroni_consul'] }
-    - { role: consul_exporter, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['consul_exporter'] }
-    - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
-    - { role: haproxy, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['haproxy']  }
-    - { role: keepalived, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['keepalived']  }
-
+    roles:
+        - { role: common, when: "inventory_hostname in groups ['consul_patroni']|default([])" }
+        - { role: consul_server, when: "inventory_hostname in groups ['consul_server']|default([])", tags: ['consul_server'] }
+        - { role: patroni_consul, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['patroni_consul'] }
+        - { role: consul_exporter, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['consul_exporter'] }
+        - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
 ```
 
 
 inventory example ./example_inventory, 
-where variable env is using for vars file 
+where variable env is using  for vars file in root of project
 
 
     [consul:children]

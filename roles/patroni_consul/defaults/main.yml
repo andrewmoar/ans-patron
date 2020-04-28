@@ -13,7 +13,7 @@ consul_dir:
 consul_system_user: consul
 consul_system_group: consul
 
-patroni_db_cluster: cluster_db
+patroni_db_cluster: patroni_db
 
 patroni_postgresql_version: 11
 patroni_postgresql_exists: false
@@ -24,8 +24,9 @@ patroni_system_group: postgres
 patroni_env_dir: "/opt/patroni"
 patroni_dcs: consul
 patroni_pip_packages:
-  - { name: "setuptools", state: "latest",  umask: "0022", executable: "pip3.6" }
-  - { name: "patroni[{{ patroni_dcs }}]", state: "present", umask: "0022", executable: "pip3.6" }
+  - { name: "dnf", state: "present",  umask: "0022", executable: "pip3" }
+  - { name: "setuptools", state: "latest",  umask: "0022", executable: "pip3" }
+  - { name: "patroni[{{ patroni_dcs }}]", state: "present", umask: "0022", executable: "pip3" }
 
 patroni_replication_username: replicator
 patroni_replication_password: repuserpasswd
@@ -100,9 +101,6 @@ patroni_bootstrap_initdb:
   - { option: "data-checksums" }
   - { option: "locale", value: "en_US.UTF-8" }
 
-patroni_bootstrap_pg_hba: #[]
-  - { type: "host", database: "all",         user: "all",   				 address: "0.0.0.0/0", method: "md5" }
-  - { type: "host", database: "replication", user: "{{ patroni_replication_username }}", address: "0.0.0.0/0", method: "md5" }
 
 patroni_bootstrap_users:
   - { name: "{{ patroni_superuser_username }}",   password: "{{ patroni_superuser_password }}",   options: [] }
