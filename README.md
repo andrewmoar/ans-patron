@@ -6,7 +6,8 @@ Install and configure patroni-cluster.
 Requirements
 ------------
 
-Ubuntu, CentOS7
+CentOS7
+
 
 Role Variables
 --------------
