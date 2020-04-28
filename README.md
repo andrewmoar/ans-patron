@@ -23,9 +23,9 @@ Role Variables
     consul_system_group: consul
 
     haproxy_pg_nodes:
-  - { host:  "{{hostvars[groups['consul_patroni'][0]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][0]]['ansible_default_ipv4']['address']}}" }
-  - { host:  "{{hostvars[groups['consul_patroni'][1]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][1]]['ansible_default_ipv4']['address']}}" }
-  - { host:  "{{hostvars[groups['consul_patroni'][2]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][2]]['ansible_default_ipv4']['address']}}" }
+     - { host:  "{{hostvars[groups['consul_patroni'][0]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][0]]['ansible_default_ipv4']['address']}}" }
+     - { host:  "{{hostvars[groups['consul_patroni'][1]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][1]]['ansible_default_ipv4']['address']}}" }
+     - { host:  "{{hostvars[groups['consul_patroni'][2]].inventory_hostname}}", ip: "{{hostvars[groups['consul_patroni'][2]]['ansible_default_ipv4']['address']}}" }
 
     keepalived_interface: ens192
     keepalived_virtual_address: 10.1.216.234/32
