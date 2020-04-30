@@ -13,7 +13,7 @@ consul_dir:
 consul_system_user: consul
 consul_system_group: consul
 
-patroni_db_cluster: patroni_db
+patroni_db_cluster: gateway_db
 
 patroni_postgresql_version: 11
 patroni_postgresql_exists: false

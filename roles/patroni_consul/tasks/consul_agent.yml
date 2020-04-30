@@ -2,7 +2,18 @@
 #- stat: 
 #    path: /usr/local/bin/consul
 #  register: consul
-  
+
+- name: Add consul group
+  group:
+    name: "{{ consul_system_group }}"
+    state: present
+
+- name: Add consul user
+  user:
+    name: "{{ consul_system_user }}"
+    group: "{{ consul_system_group }}"
+    system: yes
+    
 - name:  download consul agent &&  Unarchive consul_{{CONSUL_VERSION}}_linux_amd64.zip 
   unarchive:
     src: "https://releases.hashicorp.com/consul/{{CONSUL_VERSION}}/consul_{{CONSUL_VERSION}}_linux_amd64.zip"
@@ -33,10 +44,13 @@
 
 - name: 'Copy consul init json '
   template:
-     src: reg.json
+     src: "{{ item }}"
      dest: /etc/consul.d/
   register: consul_unit
   tags: consul
+  loop:
+    - reg.json
+    - client.json
 
 - name: 'Copy consul-agent.service'
   template: 
