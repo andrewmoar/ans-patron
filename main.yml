@@ -13,6 +13,7 @@
 
 - hosts: consul
   become: yes
+
   vars_files:
     - vars/default.yml
     - vars/{{env}}.yml
@@ -27,5 +28,5 @@
     - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
     - { role: haproxy, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['haproxy']  }
     - { role: keepalived, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['keepalived']  }
-    - { role: sysctl, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['sysctl']  }
-    - { role: transpanent-pages, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['transpanent-pages'] }
+    - { role: tuning_os, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['tuning_os']  }
+    - { role: transpanent_pages, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['transpanent_pages'] }

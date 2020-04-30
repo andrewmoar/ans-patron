@@ -1,0 +1,13 @@
+---
+- name: 'disable transpanent huge pages'
+  template:
+     src: disable-thp.service
+     dest: /etc/systemd/system/disable-thp.service
+
+- name: 'Ensure disable thp is running'
+  systemd:
+    name: disable-thp.service
+    state: started
+    daemon_reload: yes
+    enabled: yes
+

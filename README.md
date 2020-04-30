@@ -6,7 +6,7 @@ Install and configure patroni-cluster.
 Requirements
 ------------
 
-CentOS7
+CentOS7, Debian in the progress
 
 
 Role Variables
@@ -170,7 +170,7 @@ Role Variables
       - { option: "vacuum_cost_delay",           value: "10" } #question
     
     
-        #change pg_hba.conf
+        #pg_hba.conf
     patroni_postgresql_pg_hba:
      - { type: "local", database: "all",          user: "all",                                address: ,                   method: "trust" }
      - { type: "host",  database: "all",          user: "all",                                address: "127.0.0.1/32",     method: "trust" }
@@ -209,41 +209,74 @@ Role Variables
       - { name: "postgresql11-server",  state: "present" }
       - { name: "postgresql11-contrib", state: "present" }
       - { name: "postgresql11-devel",   state: "present" }
-    
+    #tuning parameters
+    sysctl_parameters:
+      - { name: "vm.swappiness" , value: "1" }
+      - { name: "vm.dirty_bytes" , value: "67108864" }
+      - { name: "vm.dirty_background_bytes" , value: "16777216" }
+      - { name: "vm.min_free_kbytes" , value: "102400" }
+      - { name: "kernel.sched_migration_cost_ns" , value: "5000000" }
+      - { name: "vm.zone_reclaim_mode" , value: "0" }
+      - { name: "kernel.numa_balancing" , value: "0" }
+      - { name: "fs.file-max" , value: "1000000" }
+      - { name: "vm.admin_reserve_kbytes" , value: "100000" }
+      - { name: "net.ipv4.tcp_timestamps" , value: "0" }
+      - { name: "net.ipv4.tcp_sack" , value: "1" }
+      - { name: "net.core.netdev_max_backlog" , value: "250000" }
+      - { name: "net.core.rmem_max" , value: "4194304" }
+      - { name: "net.core.wmem_max" , value: "4194304" }
+      - { name: "net.core.rmem_default" , value: "4194304" }
+      - { name: "net.core.wmem_default" , value: "4194304" }
+      - { name: "net.core.optmem_max" , value: "4194304" }
+      - { name: "net.ipv4.tcp_rmem" , value: "4096 87380 4194304" }
+      - { name: "net.ipv4.tcp_wmem" , value: "4096 87380 4194304" }
+      - { name: "net.ipv4.tcp_low_latency" , value: "1" }
+      - { name: "net.ipv4.tcp_adv_win_scale" , value: "1" }
+
+    limits_parameters:
+      - { name: 'nofile', user: "'*'", type: "soft", value: "1024" }
+      - { name: 'nofile', user: "'*'", type: "hard", value: "65535" }
+      - { name: 'nproc', user: "'*'", type: "soft", value: "2048" }
+      - { name: 'nproc', user: "'*'", type: "hard", value: "16384" }
+        
 
 
 Example Playbook
 ----------------
 - `main.yml` to assign roles to your nodes, e.g.:
 ```Yaml
+---
+- hosts: consul
+  become: yes
+  vars_files:
+    - vars/default.yml
+    - vars/{{env}}.yml
+  serial:
+    - 3
+    - 100%
 
-  - hosts: consul
-    become: yes
-    vars_files:
-      - vars/default.yml
-      - vars/{{env}}.yml
-    serial:
-      - 3
-      - 100%
-  
-    roles:
-      - { role: consul_server, when: "inventory_hostname in groups ['consul_server']", tags: ['consul_server'] }
-  
-  - hosts: consul
-    become: yes
-    vars_files:
-        - vars/default.yml
-        - vars/{{env}}.yml
-      serial:
-        - 3
-        - 100%
+  roles:
+    - { role: consul_server, when: "inventory_hostname in groups ['consul_server']", tags: ['consul_server'] }
 
-    roles:
-        - { role: common, when: "inventory_hostname in groups ['consul_patroni']|default([])" }
-        - { role: consul_server, when: "inventory_hostname in groups ['consul_server']|default([])", tags: ['consul_server'] }
-        - { role: patroni_consul, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['patroni_consul'] }
-        - { role: consul_exporter, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['consul_exporter'] }
-        - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
+- hosts: consul
+  become: yes
+
+  vars_files:
+    - vars/default.yml
+    - vars/{{env}}.yml
+  serial:
+    - 3
+    - 100%
+
+  roles:
+    - { role: common, when: "inventory_hostname in groups ['consul_patroni']|default([])" }
+    - { role: patroni_consul, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['patroni_consul'] }
+    - { role: consul_exporter, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['consul_exporter'] }
+    - { role: create_db, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['create_db'],ansible_python_interpreter: "/usr/bin/python3"  }
+    - { role: haproxy, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['haproxy']  }
+    - { role: keepalived, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['keepalived']  }
+    - { role: tuning_os, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['tuning_os']  }
+    - { role: transpanent_pages, when: "inventory_hostname in groups ['consul_patroni']|default([])", tags: ['transpanent_pages'] }
 ```
 
 

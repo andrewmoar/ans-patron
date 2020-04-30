@@ -1,0 +1,19 @@
+---
+- name: "modify sysctl.conf"
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: "/etc/sysctl.d/custom.conf"
+    reload: yes
+  loop: "{{ sysctl_parameters | default([])}}" 
+  when: sysctl_parameters is defined
+
+- name: modify limits
+  pam_limits:
+    domain: "{{ item.user }}"
+    limit_type: "{{ item.type }}"
+    limit_item: "{{ item.name }}"
+    value: "{{ item.value }}"
+  loop: "{{ limits_parameters | default([])}}"
+  when: limits_parameters is defined
